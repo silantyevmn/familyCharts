@@ -1,0 +1,944 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>my-family-chart</title>
+  <script src="https://unpkg.com/d3@7"></script>
+  <script type="module" src="https://unpkg.com/family-chart@0.9.0"></script>
+  <link rel="stylesheet" href="https://unpkg.com/family-chart@0.9.0/dist/styles/family-chart.css">
+  <style> body { font-family: 'Arial', sans-serif; } </style>
+</head>
+<body>
+
+<script type="importmap">
+    {
+        "imports": {
+            "firebase/app": "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js",
+            "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"
+        }
+    }
+</script>
+<script type="module">
+    import { initializeApp } from "firebase/app";
+    import { getAuth, onAuthStateChanged } from "firebase/auth";
+
+    const firebaseConfig = {
+		apiKey: "AIzaSyC8dabh_6jXYI22cpMfIA5mViNxaZAvzic",
+		authDomain: "family-tree-auth-a3956.firebaseapp.com",
+		projectId: "family-tree-auth-a3956",
+		storageBucket: "family-tree-auth-a3956.firebasestorage.app",
+		messagingSenderId: "718551498044",
+		appId: "1:718551498044:web:6c7df78296f9156bd47239"
+	};
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    onAuthStateChanged(auth, (user) => {
+        if (!user) {
+            // Не авторизован — уходим на страницу входа
+            window.location.href = "login.html";
+        }
+    });
+</script>
+
+<div id="FamilyChart" class="f3" style="width:100%;height:900px;margin:auto;background-color:rgb(33,33,33);color:#fff;"></div>
+<script type="module">
+
+create(data())
+
+function create(data) {
+  const f3Chart = f3.createChart('#FamilyChart', data)
+    .setTransitionTime(1000)
+    .setCardXSpacing(250)
+    .setCardYSpacing(150)
+    .setSingleParentEmptyCard(true, {label: 'ADD'})
+    .setShowSiblingsOfMain(false)
+    .setOrientationVertical()
+
+  const f3Card = f3Chart.setCardHtml()
+    .setCardDisplay([["first name","last name"],["birth year","death year"]])
+    .setCardDim(null)
+    .setMiniTree(true)
+    .setStyle('imageRect')
+    .setOnHoverPathToMain()
+
+  
+
+  f3Chart.updateTree({initial: true})
+}
+
+function data() {
+  return [
+    {
+      "id": "0",
+      "rels": {
+        "parents": [
+          "fdc890a8-2593-4a70-b556-e41cb538ecb3",
+          "4522976a-f321-42f6-a4d3-7ff106b6a980"
+        ],
+        "spouses": [
+          "b504c54d-22b7-4542-aee0-725138a88299",
+          "41b98929-3a9a-49fa-a9fa-be7348fc166f"
+        ],
+        "children": [
+          "a420ef5f-2ec5-4c00-a59b-168755569a3e",
+          "2914cf87-4c79-4a4f-9d56-c48e5024aad1"
+        ]
+      },
+      "data": {
+        "first name": "Михаил Николаевич",
+        "last name": "Силантьев",
+        "birthday": "15.05.1975",
+        "avatar": "",
+        "gender": "M",
+        "death year": "",
+        "birth year": "1975",
+        "education": "",
+        "birth place": "",
+        "marriage date": ""
+      }
+    },
+    {
+      "id": "fdc890a8-2593-4a70-b556-e41cb538ecb3",
+      "data": {
+        "gender": "M",
+        "first name": "Николай Анатольевич",
+        "last name": "Силантьев",
+        "birthday": "21.05.1956",
+        "death year": "2018",
+        "birth year": "1950",
+        "avatar": ""
+      },
+      "rels": {
+        "parents": [
+          "23bea42f-0eb4-4d93-aa7f-af7a2519a264",
+          "43c59119-affc-4a03-825e-9884cfc968e4"
+        ],
+        "children": [
+          "0"
+        ],
+        "spouses": [
+          "4522976a-f321-42f6-a4d3-7ff106b6a980"
+        ]
+      }
+    },
+    {
+      "id": "4522976a-f321-42f6-a4d3-7ff106b6a980",
+      "data": {
+        "gender": "F",
+        "first name": "Людмила Ивановна",
+        "last name": "Силантьева",
+        "birthday": "01.02.1950",
+        "avatar": "",
+        "death year": "2018",
+        "birth year": "1950"
+      },
+      "rels": {
+        "parents": [
+          "29d93eb8-6590-4c9c-b57e-5ebe5a9a9bfd",
+          "5acdf5e2-c978-44d5-a20c-d3ad1f0d6354"
+        ],
+        "children": [
+          "0"
+        ],
+        "spouses": [
+          "fdc890a8-2593-4a70-b556-e41cb538ecb3"
+        ]
+      }
+    },
+    {
+      "id": "b504c54d-22b7-4542-aee0-725138a88299",
+      "data": {
+        "gender": "F",
+        "first name": "Наталья Григорьевна",
+        "last name": "Гнатюк",
+        "birthday": "10.05.1978",
+        "avatar": "",
+        "death year": "",
+        "birth year": "1978",
+        "education": "",
+        "birth place": "",
+        "marriage date": ""
+      },
+      "rels": {
+        "parents": [
+          "8a0dd712-77d8-4631-a884-161d50313919",
+          "4ac40781-25f7-465f-bdea-17cc9b7ff732"
+        ],
+        "children": [
+          "a420ef5f-2ec5-4c00-a59b-168755569a3e"
+        ],
+        "spouses": [
+          "0"
+        ]
+      }
+    },
+    {
+      "id": "8a0dd712-77d8-4631-a884-161d50313919",
+      "data": {
+        "gender": "M",
+        "first name": "Григорий Борисович",
+        "last name": "Гнатюк",
+        "birthday": "26.08.1950",
+        "avatar": "",
+        "location": "Украина",
+        "death year": "-1"
+      },
+      "rels": {
+        "children": [
+          "b504c54d-22b7-4542-aee0-725138a88299",
+          "ea4ce579-9065-4593-ab3f-84e8210539d4"
+        ],
+        "spouses": [
+          "4ac40781-25f7-465f-bdea-17cc9b7ff732"
+        ],
+        "parents": [
+          "9c1dee79-df75-4992-81e4-bd2a11d169e5",
+          "5a6a1a13-8be3-414e-9c3e-c4318b3e8277"
+        ]
+      }
+    },
+    {
+      "id": "4ac40781-25f7-465f-bdea-17cc9b7ff732",
+      "data": {
+        "gender": "F",
+        "first name": "Надежда Александровна",
+        "last name": "Гнатюк",
+        "birthday": "04.04.1949",
+        "avatar": ""
+      },
+      "rels": {
+        "children": [
+          "b504c54d-22b7-4542-aee0-725138a88299",
+          "ea4ce579-9065-4593-ab3f-84e8210539d4"
+        ],
+        "spouses": [
+          "8a0dd712-77d8-4631-a884-161d50313919"
+        ],
+        "parents": [
+          "b6c570a9-57a1-4d01-a901-ba913a5a0918",
+          "9394b352-5802-4c50-9e8e-27229a44de8d"
+        ]
+      }
+    },
+    {
+      "id": "a420ef5f-2ec5-4c00-a59b-168755569a3e",
+      "data": {
+        "gender": "F",
+        "first name": "Анастасия Михайловна",
+        "last name": "Силантьева",
+        "birthday": "20.12.2011",
+        "avatar": "",
+        "death year": "",
+        "birth year": "2011",
+        "education": "",
+        "birth place": "",
+        "marriage date": ""
+      },
+      "rels": {
+        "parents": [
+          "b504c54d-22b7-4542-aee0-725138a88299",
+          "0"
+        ]
+      }
+    },
+    {
+      "id": "23bea42f-0eb4-4d93-aa7f-af7a2519a264",
+      "data": {
+        "gender": "M",
+        "first name": "Анатолий Михайлович",
+        "last name": "Лошаков",
+        "birthday": "01.01.1922",
+        "avatar": "",
+        "death year": "",
+        "birth year": "1922",
+        "education": "",
+        "birth place": "",
+        "marriage date": ""
+      },
+      "rels": {
+        "children": [
+          "fdc890a8-2593-4a70-b556-e41cb538ecb3"
+        ],
+        "spouses": [
+          "43c59119-affc-4a03-825e-9884cfc968e4"
+        ]
+      }
+    },
+    {
+      "id": "43c59119-affc-4a03-825e-9884cfc968e4",
+      "data": {
+        "gender": "F",
+        "first name": "Анна Матвеевна",
+        "last name": "Лошакова",
+        "birthday": "01.01.1925",
+        "avatar": "",
+        "death year": "",
+        "birth year": "1925",
+        "education": "",
+        "birth place": "",
+        "marriage date": ""
+      },
+      "rels": {
+        "children": [
+          "fdc890a8-2593-4a70-b556-e41cb538ecb3"
+        ],
+        "spouses": [
+          "23bea42f-0eb4-4d93-aa7f-af7a2519a264"
+        ]
+      }
+    },
+    {
+      "id": "29d93eb8-6590-4c9c-b57e-5ebe5a9a9bfd",
+      "data": {
+        "gender": "M",
+        "first name": "Иван Алексеевич",
+        "last name": "Макурин",
+        "birthday": "01.01.1910",
+        "avatar": "",
+        "death year": "",
+        "birth year": "1910",
+        "education": "",
+        "birth place": "",
+        "marriage date": ""
+      },
+      "rels": {
+        "children": [
+          "4522976a-f321-42f6-a4d3-7ff106b6a980",
+          "18bf7512-ef34-4f8d-9cb4-fe599c48913a",
+          "df614342-be8c-4eb8-956d-4bfe4eaab872"
+        ],
+        "spouses": [
+          "5acdf5e2-c978-44d5-a20c-d3ad1f0d6354"
+        ]
+      }
+    },
+    {
+      "id": "5acdf5e2-c978-44d5-a20c-d3ad1f0d6354",
+      "data": {
+        "gender": "F",
+        "first name": "Нионила Никифоровна",
+        "last name": "Макурина",
+        "birthday": "01.01.1918",
+        "avatar": "",
+        "death year": "",
+        "birth year": "1918",
+        "education": "",
+        "birth place": "",
+        "marriage date": ""
+      },
+      "rels": {
+        "children": [
+          "4522976a-f321-42f6-a4d3-7ff106b6a980",
+          "18bf7512-ef34-4f8d-9cb4-fe599c48913a",
+          "df614342-be8c-4eb8-956d-4bfe4eaab872"
+        ],
+        "spouses": [
+          "29d93eb8-6590-4c9c-b57e-5ebe5a9a9bfd"
+        ]
+      }
+    },
+    {
+      "id": "18bf7512-ef34-4f8d-9cb4-fe599c48913a",
+      "data": {
+        "gender": "M",
+        "first name": "Николай Иванович",
+        "last name": "Макурин",
+        "birthday": "14.04.1948",
+        "avatar": "",
+        "death year": "",
+        "birth year": "1948",
+        "education": "",
+        "birth place": "",
+        "marriage date": ""
+      },
+      "rels": {
+        "parents": [
+          "5acdf5e2-c978-44d5-a20c-d3ad1f0d6354",
+          "29d93eb8-6590-4c9c-b57e-5ebe5a9a9bfd"
+        ]
+      }
+    },
+    {
+      "id": "df614342-be8c-4eb8-956d-4bfe4eaab872",
+      "data": {
+        "gender": "F",
+        "first name": "Наталья Ивановна",
+        "last name": "Стрижевич",
+        "birthday": "23.05.1950",
+        "avatar": "",
+        "death year": "",
+        "birth year": "1950",
+        "education": "",
+        "birth place": "",
+        "marriage date": ""
+      },
+      "rels": {
+        "parents": [
+          "5acdf5e2-c978-44d5-a20c-d3ad1f0d6354",
+          "29d93eb8-6590-4c9c-b57e-5ebe5a9a9bfd"
+        ],
+        "children": [
+          "227e72d0-33ec-45c0-b277-e1f85caf685b",
+          "22ee947a-09b2-4329-b000-2afb12271703"
+        ],
+        "spouses": [
+          "85a4468f-ee5b-4d9b-9464-39985aaa912c"
+        ]
+      }
+    },
+    {
+      "id": "41b98929-3a9a-49fa-a9fa-be7348fc166f",
+      "data": {
+        "gender": "F",
+        "first name": "Наталья Геннадьевна",
+        "last name": "Силантьева",
+        "birthday": "10.03.1976",
+        "death year": "",
+        "birth year": "1976",
+        "location": "",
+        "avatar": "",
+        "education": "",
+        "birth place": "",
+        "marriage date": ""
+      },
+      "rels": {
+        "children": [
+          "2914cf87-4c79-4a4f-9d56-c48e5024aad1"
+        ],
+        "spouses": [
+          "0"
+        ]
+      }
+    },
+    {
+      "id": "2914cf87-4c79-4a4f-9d56-c48e5024aad1",
+      "data": {
+        "gender": "F",
+        "first name": "Александра Михайловна",
+        "last name": "Силантьева",
+        "birthday": "26.06.2002",
+        "death year": "",
+        "birth year": "2002",
+        "location": "",
+        "avatar": "",
+        "education": "",
+        "birth place": "",
+        "marriage date": ""
+      },
+      "rels": {
+        "parents": [
+          "0",
+          "41b98929-3a9a-49fa-a9fa-be7348fc166f"
+        ]
+      }
+    },
+    {
+      "id": "ea4ce579-9065-4593-ab3f-84e8210539d4",
+      "data": {
+        "gender": "M",
+        "first name": "Константин Григорьевич",
+        "last name": "Гнатюк",
+        "birthday": "07.12.1972",
+        "death year": "",
+        "birth year": "1972",
+        "location": "",
+        "avatar": "",
+        "education": "",
+        "birth place": "",
+        "marriage date": ""
+      },
+      "rels": {
+        "parents": [
+          "4ac40781-25f7-465f-bdea-17cc9b7ff732",
+          "8a0dd712-77d8-4631-a884-161d50313919"
+        ]
+      }
+    },
+    {
+      "id": "85a4468f-ee5b-4d9b-9464-39985aaa912c",
+      "data": {
+        "gender": "M",
+        "first name": "Валерий Трофимович",
+        "last name": "Стрижевич",
+        "birthday": "05.06.1950",
+        "death year": "",
+        "birth year": "1950",
+        "location": "Белорусь"
+      },
+      "rels": {
+        "children": [
+          "227e72d0-33ec-45c0-b277-e1f85caf685b",
+          "22ee947a-09b2-4329-b000-2afb12271703"
+        ],
+        "spouses": [
+          "df614342-be8c-4eb8-956d-4bfe4eaab872"
+        ]
+      }
+    },
+    {
+      "id": "227e72d0-33ec-45c0-b277-e1f85caf685b",
+      "data": {
+        "gender": "M",
+        "first name": "Сергей Валерьевич",
+        "last name": "Стрижевич",
+        "birthday": "24.09.1981",
+        "death year": "",
+        "birth year": "1981",
+        "location": "МО",
+        "avatar": "",
+        "education": "",
+        "birth place": "",
+        "marriage date": ""
+      },
+      "rels": {
+        "parents": [
+          "85a4468f-ee5b-4d9b-9464-39985aaa912c",
+          "df614342-be8c-4eb8-956d-4bfe4eaab872"
+        ],
+        "children": [
+          "88b0d667-1c7f-4e33-a67e-a9923578c28c",
+          "1790033c-2d30-4ed7-8963-52390e753b53"
+        ],
+        "spouses": [
+          "f5026019-eda7-48a2-bf5b-20f0562fd816"
+        ]
+      }
+    },
+    {
+      "id": "f5026019-eda7-48a2-bf5b-20f0562fd816",
+      "data": {
+        "gender": "F",
+        "first name": "Мария Сергеевна",
+        "last name": "Стрижевич",
+        "birthday": "13.02.1988",
+        "death year": "",
+        "birth year": "1988",
+        "location": "МО",
+        "avatar": "",
+        "education": "",
+        "birth place": "",
+        "marriage date": ""
+      },
+      "rels": {
+        "children": [
+          "88b0d667-1c7f-4e33-a67e-a9923578c28c",
+          "1790033c-2d30-4ed7-8963-52390e753b53"
+        ],
+        "spouses": [
+          "227e72d0-33ec-45c0-b277-e1f85caf685b"
+        ]
+      }
+    },
+    {
+      "id": "88b0d667-1c7f-4e33-a67e-a9923578c28c",
+      "data": {
+        "gender": "M",
+        "first name": "Матвей Сергеевич",
+        "last name": "Стрижевич",
+        "birthday": "12.04.2018",
+        "death year": "",
+        "birth year": "2018",
+        "location": "МО",
+        "avatar": "",
+        "education": "",
+        "birth place": "",
+        "marriage date": ""
+      },
+      "rels": {
+        "parents": [
+          "227e72d0-33ec-45c0-b277-e1f85caf685b",
+          "f5026019-eda7-48a2-bf5b-20f0562fd816"
+        ]
+      }
+    },
+    {
+      "id": "1790033c-2d30-4ed7-8963-52390e753b53",
+      "data": {
+        "gender": "M",
+        "first name": "Максим Сергеевич",
+        "last name": "Стрижевич",
+        "birthday": "25.07.2023",
+        "death year": "",
+        "birth year": "2023",
+        "location": "МО",
+        "avatar": "",
+        "education": "",
+        "birth place": "",
+        "marriage date": ""
+      },
+      "rels": {
+        "parents": [
+          "227e72d0-33ec-45c0-b277-e1f85caf685b",
+          "f5026019-eda7-48a2-bf5b-20f0562fd816"
+        ]
+      }
+    },
+    {
+      "id": "22ee947a-09b2-4329-b000-2afb12271703",
+      "data": {
+        "gender": "F",
+        "first name": "Ирина Валерьевна",
+        "last name": "Меркурьева",
+        "birthday": "25.06.1985",
+        "death year": "",
+        "birth year": "1985",
+        "location": "МО",
+        "avatar": "",
+        "education": "",
+        "birth place": "",
+        "marriage date": ""
+      },
+      "rels": {
+        "parents": [
+          "df614342-be8c-4eb8-956d-4bfe4eaab872",
+          "85a4468f-ee5b-4d9b-9464-39985aaa912c"
+        ],
+        "children": [
+          "4da827b5-afc9-4afe-8f5b-f4d75a22702c",
+          "1772f9a3-de19-4c29-b24e-1a67cc1d023b",
+          "0cdd979d-1cf9-41b4-9520-a6be1cae8063"
+        ],
+        "spouses": [
+          "f86bedc4-f3e6-44f7-82a7-c6426462a857"
+        ]
+      }
+    },
+    {
+      "id": "f86bedc4-f3e6-44f7-82a7-c6426462a857",
+      "data": {
+        "gender": "M",
+        "first name": "Дмитрий Николаевич",
+        "last name": "Меркурьев",
+        "birthday": "27.03.1982",
+        "death year": "",
+        "birth year": "1982",
+        "location": "МО",
+        "avatar": "",
+        "education": "",
+        "birth place": "",
+        "marriage date": ""
+      },
+      "rels": {
+        "children": [
+          "4da827b5-afc9-4afe-8f5b-f4d75a22702c",
+          "1772f9a3-de19-4c29-b24e-1a67cc1d023b",
+          "0cdd979d-1cf9-41b4-9520-a6be1cae8063"
+        ],
+        "spouses": [
+          "22ee947a-09b2-4329-b000-2afb12271703"
+        ],
+        "parents": [
+          "43e7f2f6-5ee7-4ead-ab02-a8c99fb6b51a",
+          "668d76e7-7e04-4e63-b259-ab94af011f4e"
+        ]
+      }
+    },
+    {
+      "id": "4da827b5-afc9-4afe-8f5b-f4d75a22702c",
+      "data": {
+        "gender": "F",
+        "first name": "Полина Дмитриевна",
+        "last name": "Меркурьева",
+        "birthday": "16.01.2016",
+        "death year": "",
+        "birth year": "2016",
+        "location": "МО",
+        "avatar": "",
+        "education": "",
+        "birth place": "",
+        "marriage date": ""
+      },
+      "rels": {
+        "parents": [
+          "22ee947a-09b2-4329-b000-2afb12271703",
+          "f86bedc4-f3e6-44f7-82a7-c6426462a857"
+        ]
+      }
+    },
+    {
+      "id": "1772f9a3-de19-4c29-b24e-1a67cc1d023b",
+      "data": {
+        "gender": "F",
+        "first name": "Ульяна Дмитриевна",
+        "last name": "Меркурьева",
+        "birthday": "30.05.2019",
+        "death year": "",
+        "birth year": "2019",
+        "location": "МО",
+        "avatar": "",
+        "education": "",
+        "birth place": "",
+        "marriage date": ""
+      },
+      "rels": {
+        "parents": [
+          "22ee947a-09b2-4329-b000-2afb12271703",
+          "f86bedc4-f3e6-44f7-82a7-c6426462a857"
+        ]
+      }
+    },
+    {
+      "id": "0cdd979d-1cf9-41b4-9520-a6be1cae8063",
+      "data": {
+        "gender": "F",
+        "first name": "Мелания Дмитриевна",
+        "last name": "Меркурьева",
+        "birthday": "07.07.2022",
+        "death year": "",
+        "birth year": "2022",
+        "location": "МО",
+        "avatar": "",
+        "education": "",
+        "birth place": "",
+        "marriage date": ""
+      },
+      "rels": {
+        "parents": [
+          "22ee947a-09b2-4329-b000-2afb12271703",
+          "f86bedc4-f3e6-44f7-82a7-c6426462a857"
+        ]
+      }
+    },
+    {
+      "id": "43e7f2f6-5ee7-4ead-ab02-a8c99fb6b51a",
+      "data": {
+        "gender": "M",
+        "first name": "Николай Вениаминович",
+        "last name": "Меркурьев ",
+        "birthday": "05.03.1957",
+        "avatar": "",
+        "location": "Великий Устюг",
+        "death year": "",
+        "birth year": "1957",
+        "education": "",
+        "birth place": "",
+        "marriage date": ""
+      },
+      "rels": {
+        "children": [
+          "f86bedc4-f3e6-44f7-82a7-c6426462a857"
+        ],
+        "spouses": [
+          "668d76e7-7e04-4e63-b259-ab94af011f4e"
+        ]
+      }
+    },
+    {
+      "id": "668d76e7-7e04-4e63-b259-ab94af011f4e",
+      "data": {
+        "gender": "F",
+        "first name": "Вера Ивановна",
+        "last name": "Меркурьева",
+        "birthday": "28.10.1961 ",
+        "avatar": "",
+        "location": "Мордовия",
+        "death year": "",
+        "birth year": "1961",
+        "education": "",
+        "birth place": "",
+        "marriage date": ""
+      },
+      "rels": {
+        "children": [
+          "f86bedc4-f3e6-44f7-82a7-c6426462a857"
+        ],
+        "spouses": [
+          "43e7f2f6-5ee7-4ead-ab02-a8c99fb6b51a"
+        ]
+      }
+    },
+    {
+      "id": "9c1dee79-df75-4992-81e4-bd2a11d169e5",
+      "data": {
+        "gender": "M",
+        "first name": "Борис Григорьевич",
+        "last name": "Гнатюк",
+        "birthday": "-1",
+        "avatar": "",
+        "location": "",
+        "death year": "-1"
+      },
+      "rels": {
+        "children": [
+          "8a0dd712-77d8-4631-a884-161d50313919"
+        ],
+        "spouses": [
+          "5a6a1a13-8be3-414e-9c3e-c4318b3e8277"
+        ]
+      }
+    },
+    {
+      "id": "5a6a1a13-8be3-414e-9c3e-c4318b3e8277",
+      "data": {
+        "gender": "F",
+        "first name": "Маргарита Васильевна",
+        "last name": "Гнатюк",
+        "birthday": "-1",
+        "avatar": "",
+        "location": "Москва",
+        "death year": "-1"
+      },
+      "rels": {
+        "children": [
+          "8a0dd712-77d8-4631-a884-161d50313919"
+        ],
+        "spouses": [
+          "9c1dee79-df75-4992-81e4-bd2a11d169e5"
+        ]
+      }
+    },
+    {
+      "id": "b6c570a9-57a1-4d01-a901-ba913a5a0918",
+      "data": {
+        "gender": "M",
+        "first name": "Александр Матвеевич",
+        "last name": "Косоуров",
+        "birthday": "1925",
+        "avatar": "",
+        "location": "",
+        "death year": "2011"
+      },
+      "rels": {
+        "parents": [
+          "cdad279f-52d2-4887-ad66-4d17cdb23591",
+          "370f4084-e6b5-4518-ad5c-e41380a725c1"
+        ],
+        "children": [
+          "4ac40781-25f7-465f-bdea-17cc9b7ff732"
+        ],
+        "spouses": [
+          "9394b352-5802-4c50-9e8e-27229a44de8d"
+        ]
+      }
+    },
+    {
+      "id": "9394b352-5802-4c50-9e8e-27229a44de8d",
+      "data": {
+        "gender": "F",
+        "first name": "Антонина Константиновна",
+        "last name": "Соколова",
+        "birthday": "1928",
+        "avatar": "",
+        "location": "МО",
+        "death year": "-1"
+      },
+      "rels": {
+        "children": [
+          "4ac40781-25f7-465f-bdea-17cc9b7ff732"
+        ],
+        "spouses": [
+          "b6c570a9-57a1-4d01-a901-ba913a5a0918"
+        ]
+      }
+    },
+    {
+      "id": "cdad279f-52d2-4887-ad66-4d17cdb23591",
+      "data": {
+        "gender": "M",
+        "first name": "Матвей Иванович",
+        "last name": "Косоуров",
+        "birthday": "-1",
+        "avatar": "",
+        "location": "МО",
+        "death year": "-1"
+      },
+      "rels": {
+        "children": [
+          "b6c570a9-57a1-4d01-a901-ba913a5a0918",
+          "be9bcbca-1160-4746-a8ca-de0ce7a353dc",
+          "47c20d9c-c3ab-42ec-aa47-b8ce406ed27c",
+          "46812453-17bc-4a81-96aa-952ef9e5fc92"
+        ],
+        "spouses": [
+          "370f4084-e6b5-4518-ad5c-e41380a725c1"
+        ]
+      }
+    },
+    {
+      "id": "370f4084-e6b5-4518-ad5c-e41380a725c1",
+      "data": {
+        "gender": "F",
+        "first name": "Анна Егоровна",
+        "last name": "Родионова",
+        "birthday": "-1",
+        "avatar": "",
+        "location": "МО",
+        "death year": "-1"
+      },
+      "rels": {
+        "children": [
+          "b6c570a9-57a1-4d01-a901-ba913a5a0918",
+          "be9bcbca-1160-4746-a8ca-de0ce7a353dc",
+          "47c20d9c-c3ab-42ec-aa47-b8ce406ed27c",
+          "46812453-17bc-4a81-96aa-952ef9e5fc92"
+        ],
+        "spouses": [
+          "cdad279f-52d2-4887-ad66-4d17cdb23591"
+        ]
+      }
+    },
+    {
+      "id": "be9bcbca-1160-4746-a8ca-de0ce7a353dc",
+      "data": {
+        "gender": "M",
+        "first name": "Иван Матвеевич",
+        "last name": "Косоуров",
+        "birthday": "-1",
+        "avatar": "",
+        "location": "МО",
+        "death year": "-1"
+      },
+      "rels": {
+        "parents": [
+          "cdad279f-52d2-4887-ad66-4d17cdb23591",
+          "370f4084-e6b5-4518-ad5c-e41380a725c1"
+        ]
+      }
+    },
+    {
+      "id": "47c20d9c-c3ab-42ec-aa47-b8ce406ed27c",
+      "data": {
+        "gender": "M",
+        "first name": "Петр Матвеевич",
+        "last name": "Косоуров",
+        "birthday": "-1",
+        "avatar": "",
+        "location": "МО",
+        "death year": "-1"
+      },
+      "rels": {
+        "parents": [
+          "cdad279f-52d2-4887-ad66-4d17cdb23591",
+          "370f4084-e6b5-4518-ad5c-e41380a725c1"
+        ]
+      }
+    },
+    {
+      "id": "46812453-17bc-4a81-96aa-952ef9e5fc92",
+      "data": {
+        "gender": "M",
+        "first name": "Алексей Матвеевич",
+        "last name": "Косоуров",
+        "birthday": "-1",
+        "avatar": "",
+        "location": "МО",
+        "death year": "-1"
+      },
+      "rels": {
+        "parents": [
+          "cdad279f-52d2-4887-ad66-4d17cdb23591",
+          "370f4084-e6b5-4518-ad5c-e41380a725c1"
+        ]
+      }
+    }
+  ]
+}
+
+
+</script>
+</body>
+</html>
