@@ -10,9 +10,10 @@
   <style>
     body { font-family: 'Arial', sans-serif; margin: 0; background-color: rgb(33,33,33); color: #fff; }
     #FamilyChart { width: 100%; height: 100vh; min-height: 500px; margin: auto; background-color: rgb(33,33,33); }
-    .message { text-align: center; padding: 50px; font-size: 1.2rem; background: #2a2a3b; margin: 20px; border-radius: 8px; }
-    .error { color: #ff8888; }
+    .message { text-align: center; padding: 50px; font-size: 1.2rem; background: #2a2a3b; margin: 20px; border-radius: 8px; word-break: break-word; }
+    .error { color: #ff8888; background: #3a1a1a; }
     .loading { color: #88ff88; }
+    .debug { font-size: 0.8rem; color: #aaa; margin-top: 20px; }
   </style>
 </head>
 <body>
@@ -31,9 +32,31 @@
 </script>
 
 <script type="module">
+  // Перехват глобальных ошибок для отображения на экране
+  window.addEventListener('error', (event) => {
+    const container = document.getElementById('FamilyChart');
+    if (container) {
+      container.innerHTML = `<div class="message error">Глобальная ошибка: ${event.message}<br><span class="debug">${event.filename}:${event.lineno}</span></div>`;
+    }
+  });
+
+  window.addEventListener('unhandledrejection', (event) => {
+    const container = document.getElementById('FamilyChart');
+    if (container) {
+      container.innerHTML = `<div class="message error">Необработанный Promise: ${event.reason}</div>`;
+    }
+  });
+
   import { initializeApp } from "firebase/app";
   import { getAuth, onAuthStateChanged } from "firebase/auth";
   import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
+
+  function showMessage(text, isError = false, details = '') {
+    const container = document.getElementById('FamilyChart');
+    if (container) {
+      container.innerHTML = `<div class="message ${isError ? 'error' : 'loading'}">${text}${details ? `<br><span class="debug">${details}</span>` : ''}</div>`;
+    }
+  }
 
   const firebaseConfig = {
     apiKey: "AIzaSyC8dabh_6jXYI22cpMfIA5mViNxaZAvzic",
@@ -44,17 +67,17 @@
     appId: "1:718551498044:web:6c7df78296f9156bd47239"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-  const treeDocRef = doc(db, "familyTree", "mainTree");
+  let app, auth, db, treeDocRef;
 
-  // Функция отображения сообщений в контейнере
-  function showMessage(text, isError = false) {
-    const container = document.getElementById('FamilyChart');
-    if (container) {
-      container.innerHTML = `<div class="message ${isError ? 'error' : 'loading'}">${text}</div>`;
-    }
+  try {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+    treeDocRef = doc(db, "familyTree", "mainTree");
+    showMessage("Firebase инициализирован, ожидаем авторизацию...");
+  } catch (err) {
+    showMessage("Ошибка инициализации Firebase: " + err.message, true);
+    throw err;
   }
 
   async function saveToFirestore(treeData) {
@@ -64,6 +87,7 @@
       console.log("Данные сохранены");
     } catch (e) {
       console.error("Ошибка сохранения:", e);
+      showMessage("Ошибка сохранения: " + e.message, true);
     }
   }
 
@@ -73,7 +97,6 @@
       if (docSnap.exists() && docSnap.data().treeData && Array.isArray(docSnap.data().treeData)) {
         return docSnap.data().treeData;
       } else {
-        // Начальные данные, если документа нет или он пуст
         return [{
           "id": "0",
           "rels": {},
@@ -96,90 +119,110 @@
     const container = document.getElementById('FamilyChart');
     if (container) container.innerHTML = '';
 
-    // Создаём дерево
-    const f3Chart = f3.createChart('#FamilyChart', initialData)
-      .setTransitionTime(1000)
-      .setCardXSpacing(250)
-      .setCardYSpacing(150)
-      .setSingleParentEmptyCard(true, { label: 'ADD' })
-      .setShowSiblingsOfMain(false)
-      .setOrientationVertical();
+    try {
+      const f3Chart = f3.createChart('#FamilyChart', initialData)
+        .setTransitionTime(1000)
+        .setCardXSpacing(250)
+        .setCardYSpacing(150)
+        .setSingleParentEmptyCard(true, { label: 'ADD' })
+        .setShowSiblingsOfMain(false)
+        .setOrientationVertical();
 
-    const f3Card = f3Chart.setCardHtml()
-      .setCardDisplay([["first name","last name"],["birth year","death year"]])
-      .setCardDim(null)
-      .setMiniTree(true)
-      .setStyle('imageRect')
-      .setOnHoverPathToMain();
+      const f3Card = f3Chart.setCardHtml()
+        .setCardDisplay([["first name","last name"],["birth year","death year"]])
+        .setCardDim(null)
+        .setMiniTree(true)
+        .setStyle('imageRect')
+        .setOnHoverPathToMain();
 
-    const f3EditTree = f3Chart.editTree()
-      .fixed(true)
-      .setFields(["first name","last name","birthday","avatar","birth year","death year","location"])
-      .setEditFirst(true)
-      .setCardClickOpen(f3Card);
-    
-    f3EditTree.setEdit();
+      const f3EditTree = f3Chart.editTree()
+        .fixed(true)
+        .setFields(["first name","last name","birthday","avatar","birth year","death year","location"])
+        .setEditFirst(true)
+        .setCardClickOpen(f3Card);
+      
+      f3EditTree.setEdit();
 
-    f3EditTree.setOnChange(async () => {
-      console.log("Изменение, сохраняем...");
-      const updatedData = f3EditTree.exportData();
-      await saveToFirestore(updatedData);
-    });
+      f3EditTree.setOnChange(async () => {
+        console.log("Изменение, сохраняем...");
+        const updatedData = f3EditTree.exportData();
+        await saveToFirestore(updatedData);
+      });
 
-    f3Chart.updateTree({ initial: true });
-    
-    // ИСПРАВЛЕНИЕ: проверяем main datum
-    let mainDatum = f3Chart.getMainDatum();
-    if (!mainDatum && initialData.length > 0) {
-      console.warn("getMainDatum вернул null, используем первый элемент");
-      mainDatum = initialData[0];
+      f3Chart.updateTree({ initial: true });
+      
+      let mainDatum = f3Chart.getMainDatum();
+      if (!mainDatum && initialData.length > 0) {
+        console.warn("getMainDatum вернул null, используем первый элемент");
+        mainDatum = initialData[0];
+      }
+      if (mainDatum) {
+        f3EditTree.open(mainDatum);
+      } else {
+        throw new Error("Не удалось определить главный элемент дерева");
+      }
+      
+      f3Chart.updateTree({ initial: true });
+
+      window.f3Chart = f3Chart;
+      window.f3EditTree = f3EditTree;
+    } catch (err) {
+      console.error("Ошибка отрисовки:", err);
+      showMessage("Ошибка отрисовки дерева: " + err.message, true);
     }
-    if (mainDatum) {
-      f3EditTree.open(mainDatum);
-    } else {
-      console.error("Не удалось определить главный элемент");
-      showMessage("Ошибка: не найден главный элемент дерева", true);
-      return;
-    }
-    
-    f3Chart.updateTree({ initial: true });
-
-    window.f3Chart = f3Chart;
-    window.f3EditTree = f3EditTree;
   }
 
   // Авторизация и запуск
   onAuthStateChanged(auth, async (user) => {
-    if (!user) {
-      window.location.href = "index.html";
-      return;
-    }
-
-    showMessage("Загрузка данных...", false);
-    const treeData = await loadFromFirestore();
-    if (!treeData) return;
-
-    await renderTree(treeData);
-
-    // Слушаем изменения в Firestore
-    onSnapshot(treeDocRef, async (docSnapshot) => {
-      if (docSnapshot.exists() && docSnapshot.data().treeData) {
-        const newDataFromServer = docSnapshot.data().treeData;
-        const currentLocalData = window.f3EditTree ? window.f3EditTree.exportData() : null;
-        if (currentLocalData && JSON.stringify(currentLocalData) !== JSON.stringify(newDataFromServer)) {
-          console.log("Получены обновления из Firestore, обновляем дерево...");
-          if (window.f3EditTree) window.f3EditTree.setOnChange(null);
-          await renderTree(newDataFromServer);
-          if (window.f3EditTree) {
-            window.f3EditTree.setOnChange(async () => {
-              const updatedData = window.f3EditTree.exportData();
-              await saveToFirestore(updatedData);
-            });
-          }
-        }
+    try {
+      if (!user) {
+        showMessage("Перенаправление на страницу входа...");
+        window.location.href = "index.html";
+        return;
       }
-    });
+
+      showMessage("Пользователь авторизован: " + user.email + ". Загрузка данных...");
+      const treeData = await loadFromFirestore();
+      if (!treeData) return;
+
+      await renderTree(treeData);
+
+      // Слушаем изменения в Firestore
+      onSnapshot(treeDocRef, async (docSnapshot) => {
+        try {
+          if (docSnapshot.exists() && docSnapshot.data().treeData) {
+            const newDataFromServer = docSnapshot.data().treeData;
+            const currentLocalData = window.f3EditTree ? window.f3EditTree.exportData() : null;
+            if (currentLocalData && JSON.stringify(currentLocalData) !== JSON.stringify(newDataFromServer)) {
+              console.log("Получены обновления из Firestore, обновляем дерево...");
+              if (window.f3EditTree) window.f3EditTree.setOnChange(null);
+              await renderTree(newDataFromServer);
+              if (window.f3EditTree) {
+                window.f3EditTree.setOnChange(async () => {
+                  const updatedData = window.f3EditTree.exportData();
+                  await saveToFirestore(updatedData);
+                });
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Ошибка в onSnapshot:", err);
+          showMessage("Ошибка синхронизации: " + err.message, true);
+        }
+      });
+    } catch (err) {
+      console.error("Общая ошибка в onAuthStateChanged:", err);
+      showMessage("Критическая ошибка: " + err.message, true);
+    }
   });
+
+  // Таймаут на случай, если авторизация зависла
+  setTimeout(() => {
+    const container = document.getElementById('FamilyChart');
+    if (container && container.innerHTML.includes("Загрузка семейного древа")) {
+      container.innerHTML = '<div class="message error">Зависание: авторизация не завершена. Проверьте соединение и настройки Firebase.</div>';
+    }
+  }, 10000);
 </script>
 </body>
 </html>
