@@ -20,13 +20,15 @@
 </div>
 
 <script type="module">
-  // Прямой импорт Firebase SDK без importmap
+  // Прямой импорт Firebase SDK
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
   
-  // Импорт family-chart
-  import * as f3 from 'https://unpkg.com/family-chart@0.9.0';
+  // Импорт family-chart - ПРАВИЛЬНЫЙ СПОСОБ
+  import * as familyChart from 'https://unpkg.com/family-chart@0.9.0';
+  // Библиотека экспортирует объект с методом createChart
+  const f3 = familyChart.default || familyChart;
 
   function showMessage(text, isError = false) {
     const container = document.getElementById('FamilyChart');
@@ -91,6 +93,12 @@
     container.innerHTML = '';
     
     try {
+      // Проверяем, что f3 и createChart существуют
+      if (!f3 || typeof f3.createChart !== 'function') {
+        throw new Error('Библиотека family-chart не загружена или createChart не найден');
+      }
+      
+      console.log("Создаём дерево...");
       const f3Chart = f3.createChart('#FamilyChart', initialData)
         .setTransitionTime(1000)
         .setCardXSpacing(250)
@@ -151,11 +159,6 @@
       await renderTree(treeData);
     }
   });
-
-  // Таймаут на случай зависания авторизации
-  setTimeout(() => {
-    console.log("Проверка: прошло 10 секунд");
-  }, 10000);
 </script>
 </body>
 </html>
