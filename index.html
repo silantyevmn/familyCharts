@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <title>Вход в семейное древо</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
             margin: 0;
             height: 100vh;
@@ -13,22 +16,23 @@
             font-family: sans-serif;
             background: #1e1e2f;
         }
-        .login-card {
+        .login-card, .choice-card {
             background: white;
             padding: 2rem;
             border-radius: 12px;
-            width: 300px;
+            width: 320px;
             text-align: center;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
         }
         .login-card input {
-            width: 90%;
+            width: 100%;
             padding: 10px;
             margin: 10px 0;
             border: 1px solid #ccc;
             border-radius: 6px;
+            font-size: 16px;
         }
-        .login-card button {
+        .login-card button, .choice-card button {
             width: 100%;
             padding: 10px;
             background: #2c7da0;
@@ -37,22 +41,77 @@
             border-radius: 6px;
             cursor: pointer;
             font-size: 16px;
+            margin-top: 10px;
+        }
+        .choice-card .choice-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .choice-card .choice-buttons button {
+            margin-top: 0;
         }
         .error {
             color: #d9534f;
             margin-top: 10px;
             font-size: 14px;
         }
+        h2, p { margin: 0 0 10px 0; }
+        /* Стили для поля пароля с кнопкой показа */
+        .password-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        .password-wrapper input {
+            width: 100%;
+            padding-right: 40px;
+            margin: 10px 0 0 0;
+        }
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            user-select: none;
+            font-size: 18px;
+            line-height: 1;
+            margin-top: 5px;
+        }
+        .lang-indicator {
+            font-size: 12px;
+            color: #2c7da0;
+            margin-top: 4px;
+            margin-bottom: 8px;
+            text-align: right;
+        }
     </style>
 </head>
 <body>
-<div class="login-card">
-    <h2>🌳 Семейное древо</h2>
-    <p>Введите email и пароль</p>
-    <input type="email" id="email" placeholder="Email" autocomplete="email">
-    <input type="password" id="password" placeholder="Пароль" autocomplete="current-password">
-    <button id="loginBtn">Войти</button>
-    <div id="errorMsg" class="error"></div>
+<div id="app">
+    <!-- Форма входа -->
+    <div id="loginForm" class="login-card">
+        <h2>🌳 Семейное древо</h2>
+        <p>Введите email и пароль</p>
+        <input type="email" id="email" placeholder="Email" autocomplete="email">
+        <div class="password-wrapper">
+            <input type="password" id="password" placeholder="Пароль" autocomplete="current-password">
+            <span class="toggle-password" id="togglePassword">👁️</span>
+        </div>
+        <div id="langIndicator" class="lang-indicator">—</div>
+        <button id="loginBtn">Войти</button>
+        <div id="errorMsg" class="error"></div>
+    </div>
+
+    <!-- Блок выбора режима (изначально скрыт) -->
+    <div id="choicePanel" class="choice-card" style="display: none;">
+        <h2>✅ Вы вошли</h2>
+        <p>Выберите режим работы</p>
+        <div class="choice-buttons">
+            <button id="viewBtn">👁️ Просмотр</button>
+            <button id="editBtn">✏️ Редактирование</button>
+        </div>
+    </div>
 </div>
 
 <script type="importmap">
@@ -66,37 +125,87 @@
 
 <script type="module">
     import { initializeApp } from "firebase/app";
-    import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 
-    // ВСТАВЬТЕ ВАШ КОНФИГ FIREBASE
     const firebaseConfig = {
-		apiKey: "AIzaSyC8dabh_6jXYI22cpMfIA5mViNxaZAvzic",
-		authDomain: "family-tree-auth-a3956.firebaseapp.com",
-		projectId: "family-tree-auth-a3956",
-		storageBucket: "family-tree-auth-a3956.firebasestorage.app",
-		messagingSenderId: "718551498044",
-		appId: "1:718551498044:web:6c7df78296f9156bd47239"
-	};
+        apiKey: "AIzaSyC8dabh_6jXYI22cpMfIA5mViNxaZAvzic",
+        authDomain: "family-tree-auth-a3956.firebaseapp.com",
+        projectId: "family-tree-auth-a3956",
+        storageBucket: "family-tree-auth-a3956.firebasestorage.app",
+        messagingSenderId: "718551498044",
+        appId: "1:718551498044:web:6c7df78296f9156bd47239"
+    };
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
+    const loginForm = document.getElementById('loginForm');
+    const choicePanel = document.getElementById('choicePanel');
     const loginBtn = document.getElementById('loginBtn');
     const errorDiv = document.getElementById('errorMsg');
+    const viewBtn = document.getElementById('viewBtn');
+    const editBtn = document.getElementById('editBtn');
+    const passwordInput = document.getElementById('password');
+    const togglePassword = document.getElementById('togglePassword');
+    const langIndicator = document.getElementById('langIndicator');
+
+    // Показать/скрыть пароль
+    togglePassword.addEventListener('click', () => {
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        togglePassword.textContent = type === 'password' ? '👁️' : '🙈';
+    });
+
+    // Определение раскладки по первому введённому символу
+    function detectLanguage(value) {
+		if (!value) return '—';
+		// Ищем первый буквенный символ (кириллица или латиница)
+		for (let i = 0; i < value.length; i++) {
+			const ch = value[i];
+			if (/[а-яА-ЯёЁ]/.test(ch)) return 'RU';
+			if (/[a-zA-Z]/.test(ch)) return 'EN';
+		}
+		return '—';
+	}
+
+    passwordInput.addEventListener('input', (e) => {
+        const lang = detectLanguage(e.target.value);
+        langIndicator.textContent = `${lang}`;
+        if (lang !== '—') {
+            langIndicator.style.color = '#2c7da0';
+        } else {
+            langIndicator.style.color = '#888';
+        }
+    });
 
     loginBtn.addEventListener('click', () => {
         const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-
+        const password = passwordInput.value;
         signInWithEmailAndPassword(auth, email, password)
             .then(() => {
-                // Успешный вход — перенаправляем на страницу с деревом
-                window.location.href = "old_tree.html";
+                errorDiv.textContent = '';
             })
-            .catch((error) => {
-                errorDiv.textContent = "Ошибка: неверный email или пароль";
-                console.error(error);
+            .catch(() => {
+                errorDiv.textContent = 'Неверный email или пароль';
             });
+    });
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            loginForm.style.display = 'none';
+            choicePanel.style.display = 'block';
+        } else {
+            loginForm.style.display = 'block';
+            choicePanel.style.display = 'none';
+        }
+    });
+
+    viewBtn.addEventListener('click', () => {
+        window.location.href = "tree_view.html";
+    });
+
+    editBtn.addEventListener('click', () => {
+        window.location.href = "tree_edit.html";
     });
 </script>
 </body>
