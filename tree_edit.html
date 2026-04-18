@@ -153,24 +153,26 @@
     await renderTree(treeData);
     
     // Настройка прослушивания изменений в Firestore (для синхронизации между разными пользователями)
-    onSnapshot(treeDocRef, (docSnapshot) => {
-      if (docSnapshot.exists() && docSnapshot.data().treeData) {
-        const newDataFromServer = docSnapshot.data().treeData;
-        // Получаем текущие данные из дерева через exportData
-        const currentLocalData = window.f3EditTree ? window.f3EditTree.exportData() : null;
-        
-        // Сравниваем, чтобы избежать зацикливания (если данные пришли от этого же пользователя)
-        if (currentLocalData && JSON.stringify(currentLocalData) !== JSON.stringify(newDataFromServer)) {
-          console.log("Получены обновления из Firestore, обновляем дерево...");
-          // Обновляем дерево новыми данными с сервера
-          // Важно: временно отключаем обработчик onChange, чтобы не сохранять их снова
-          if (window.f3EditTree) window.f3EditTree.setOnChange(null);
-          await renderTree(newDataFromServer);
-          // Включаем обработчик обратно
-          if (window.f3EditTree) window.f3EditTree.setOnChange(async () => { /* ... */ });
-        }
-      }
-    });
+    onSnapshot(treeDocRef, async (docSnapshot) => {
+  		if (docSnapshot.exists() && docSnapshot.data().treeData) {
+    		const newDataFromServer = docSnapshot.data().treeData;
+    		const currentLocalData = window.f3EditTree ? window.f3EditTree.exportData() : null;
+    
+    		if (currentLocalData && JSON.stringify(currentLocalData) !== JSON.stringify(newDataFromServer)) {
+      			console.log("Получены обновления из Firestore, обновляем дерево...");
+      			// Временно отключаем обработчик, чтобы не сохранять пришедшие данные обратно
+      			if (window.f3EditTree) window.f3EditTree.setOnChange(null);
+      			await renderTree(newDataFromServer);
+      			// Восстанавливаем обработчик
+      			if (window.f3EditTree) {
+       				window.f3EditTree.setOnChange(async () => {
+          				const updatedData = window.f3EditTree.exportData();
+          				await saveToFirestore(updatedData);
+        			});
+      			}
+    		}
+  		}
+	});
   });
 </script>
 </body>
