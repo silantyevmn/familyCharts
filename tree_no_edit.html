@@ -2,176 +2,135 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
   <title>my-family-chart</title>
   <script src="https://unpkg.com/d3@7"></script>
-  <script type="module" src="https://unpkg.com/family-chart@0.9.0"></script>
   <link rel="stylesheet" href="https://unpkg.com/family-chart@0.9.0/dist/styles/family-chart.css">
-  <style> body { font-family: 'Arial', sans-serif; } </style>
+  <style>
+    body { margin: 0; background: #1e1e2f; color: white; font-family: Arial, sans-serif; }
+    #FamilyChart { width: 100%; height: 100vh; background-color: rgb(33,33,33); }
+    .message { text-align: center; padding: 50px; font-size: 1.2rem; }
+    .error { color: #ff8888; }
+    .loading { color: #88ff88; }
+  </style>
 </head>
 <body>
-<div id="FamilyChart" class="f3" style="width:100%;height:900px;margin:auto;background-color:rgb(33,33,33);color:#fff;"></div>
+<div id="FamilyChart" class="f3" style="width:100%;height:100vh;margin:auto;background-color:rgb(33,33,33);color:#fff;">
+  <div class="message loading">Загрузка библиотек...</div>
+</div>
 
-<!-- Импорт Firebase -->
-<script type="importmap">
-  {
-    "imports": {
-      "firebase/app": "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js",
-      "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js",
-      "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
-    }
-  }
-</script>
-
-<script type="module">
-  import { initializeApp } from "firebase/app";
-  import { getAuth, onAuthStateChanged } from "firebase/auth";
-  import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
-
-  // ВАШ КОНФИГ FIREBASE (тот же, что и в index.html)
-  const firebaseConfig = {
-		apiKey: "AIzaSyC8dabh_6jXYI22cpMfIA5mViNxaZAvzic",
-		authDomain: "family-tree-auth-a3956.firebaseapp.com",
-		projectId: "family-tree-auth-a3956",
-		storageBucket: "family-tree-auth-a3956.firebasestorage.app",
-		messagingSenderId: "718551498044",
-		appId: "1:718551498044:web:6c7df78296f9156bd47239"
-	};
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-  const treeDocRef = doc(db, "familyTree", "mainTree");
-
-  // Глобальные переменные для хранения экземпляров
-  let currentChart = null;
-  let currentEditTree = null;
-  let currentTreeData = null; // Храним текущие данные, чтобы избежать лишних циклов
-
-  // Функция отрисовки дерева (адаптирована из вашей)
-  async function renderTree(initialData) {
+<script>
+  // Функция для отображения сообщений на экране
+  function showMessage(text, isError = false) {
     const container = document.getElementById('FamilyChart');
-    // Очищаем контейнер перед перерисовкой, чтобы избежать наложения
-    if (container) container.innerHTML = '';
-
-    // 1. СОЗДАЕМ ДЕРЕВО
-    const f3Chart = f3.createChart('#FamilyChart', initialData)
-      .setTransitionTime(1000)
-      .setCardXSpacing(250)
-      .setCardYSpacing(150)
-      .setSingleParentEmptyCard(true, {label: 'ADD'})
-      .setShowSiblingsOfMain(false)
-      .setOrientationVertical();
-
-    // Настраиваем карточки
-    const f3Card = f3Chart.setCardHtml()
-      .setCardDisplay([["first name","last name"],["birth year","death year"]])
-      .setCardDim(null)
-      .setMiniTree(true)
-      .setStyle('imageRect')
-      .setOnHoverPathToMain();
-
-    // 2. ВКЛЮЧАЕМ РЕДАКТИРОВАНИЕ
-    const f3EditTree = f3Chart.editTree()
-      .fixed(true)
-      .setFields(["first name","last name","birthday","avatar","birth year","death year","location"])
-      .setEditFirst(true)
-      .setCardClickOpen(f3Card);
-    // 2.1 ВЫКЛЮЧАЕМ РЕДАКТИРОВАНИЕ
-    f3EditTree.setNoEdit()
-
-    // 3. ⭐ ГЛАВНОЕ: НАСТРАИВАЕМ АВТОСОХРАНЕНИЕ
-    f3EditTree.setOnChange(async () => {
-      // Этот коллбэк сработает при ЛЮБОМ изменении дерева
-      console.log("Дерево было изменено, сохраняем...");
-      try {
-        // Получаем актуальные данные с помощью exportData
-        const updatedData = f3EditTree.exportData();
-        // Сохраняем их в Firestore
-        await saveToFirestore(updatedData);
-        console.log("Данные успешно сохранены в Firestore");
-      } catch (error) {
-        console.error("Ошибка при автосохранении:", error);
-      }
-    });
-
-    // Первоначальное отображение дерева
-    f3Chart.updateTree({initial: true});
-    f3EditTree.open(f3Chart.getMainDatum());
-    f3Chart.updateTree({initial: true});
-
-    // Сохраняем экземпляры в глобальные переменные на случай, если они понадобятся позже
-    window.f3Chart = f3Chart;
-    window.f3EditTree = f3EditTree;
-  }
-
-  // Функция сохранения данных в Firestore
-  async function saveToFirestore(treeData) {
-    if (!treeData) return;
-    try {
-      // Используем setDoc с merge: true, чтобы случайно не затереть другие поля документа, если они появятся
-      await setDoc(treeDocRef, { treeData: treeData }, { merge: true });
-    } catch (e) {
-      console.error("Ошибка сохранения в Firestore:", e);
-      throw e;
+    if (container) {
+      container.innerHTML = `<div class="message ${isError ? 'error' : 'loading'}">${text}</div>`;
     }
   }
 
-  // Функция загрузки данных из Firestore (оставляем как есть)
-  async function loadFromFirestore() {
-    const docSnap = await getDoc(treeDocRef);
-    if (docSnap.exists() && docSnap.data().treeData) {
-      return docSnap.data().treeData;
+  // Динамически загружаем family-chart как модуль
+  const script = document.createElement('script');
+  script.type = 'module';
+  script.src = 'https://unpkg.com/family-chart@0.9.0';
+  script.onload = () => {
+    console.log('family-chart загружен, f3 доступна?', typeof f3);
+    if (typeof f3 !== 'undefined') {
+      showMessage('Библиотека загружена. Инициализация...');
+      startApp();
     } else {
-      // Начальные данные, если документа нет
-      return [
-        {
-          "id": "0",
-          "rels": {},
-          "data": {
-            "first name": "Name",
-            "last name": "Surname",
-            "birthday": 1970,
-            "avatar": "",
-            "gender": "M"
-          }
-        }
-      ];
+      showMessage('Ошибка: библиотека не создала переменную f3', true);
     }
-  }
+  };
+  script.onerror = () => {
+    showMessage('Ошибка загрузки family-chart. Проверьте интернет.', true);
+  };
+  document.head.appendChild(script);
 
-  // --- АВТОРИЗАЦИЯ И ЗАПУСК (оставляем как есть)---
-  onAuthStateChanged(auth, async (user) => {
-    if (!user) {
-      window.location.href = "index.html";
-      return;
-    }
-    
-    // Загружаем данные из Firestore
-    const treeData = await loadFromFirestore();
-    // Отрисовываем дерево и включаем автосохранение
-    await renderTree(treeData);
-    
-    // Настройка прослушивания изменений в Firestore (для синхронизации между разными пользователями)
-    onSnapshot(treeDocRef, (docSnapshot) => {
-      if (docSnapshot.exists() && docSnapshot.data().treeData) {
-        const newDataFromServer = docSnapshot.data().treeData;
-        // Получаем текущие данные из дерева через exportData
-        const currentLocalData = window.f3EditTree ? window.f3EditTree.exportData() : null;
-        
-        // Сравниваем, чтобы избежать зацикливания (если данные пришли от этого же пользователя)
-        if (currentLocalData && JSON.stringify(currentLocalData) !== JSON.stringify(newDataFromServer)) {
-          console.log("Получены обновления из Firestore, обновляем дерево...");
-          // Обновляем дерево новыми данными с сервера
-          // Важно: временно отключаем обработчик onChange, чтобы не сохранять их снова
-          if (window.f3EditTree) window.f3EditTree.setOnChange(null);
-          await renderTree(newDataFromServer);
-          // Включаем обработчик обратно
-          if (window.f3EditTree) window.f3EditTree.setOnChange(async () => { /* ... */ });
-        }
-      }
-    });
-  });
+  function startApp() {
+    // Теперь импортируем Firebase
+    import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js").then(({ initializeApp }) => {
+      import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js").then(({ getAuth, onAuthStateChanged }) => {
+        import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js").then(({ getFirestore, doc, getDoc, setDoc, onSnapshot }) => {
+          const firebaseConfig = {
+            apiKey: "AIzaSyC8dabh_6jXYI22cpMfIA5mViNxaZAvzic",
+            authDomain: "family-tree-auth-a3956.firebaseapp.com",
+            projectId: "family-tree-auth-a3956",
+            storageBucket: "family-tree-auth-a3956.firebasestorage.app",
+            messagingSenderId: "718551498044",
+            appId: "1:718551498044:web:6c7df78296f9156bd47239"
+          };
+          const app = initializeApp(firebaseConfig);
+          const auth = getAuth(app);
+          const db = getFirestore(app);
+          const treeDocRef = doc(db, "familyTree", "mainTree");
+
+          async function saveToFirestore(treeData) {
+            if (!treeData) return;
+            try {
+              await setDoc(treeDocRef, { treeData: treeData }, { merge: true });
+              console.log("Сохранено");
+            } catch(e) { console.error(e); }
+          }
+
+          async function loadFromFirestore() {
+            try {
+              const docSnap = await getDoc(treeDocRef);
+              if (docSnap.exists() && docSnap.data().treeData) {
+                return docSnap.data().treeData;
+              } else {
+                return [{
+                  "id": "0", "rels": {}, "data": { "first name": "Name", "last name": "Surname", "birthday": 1970, "avatar": "", "gender": "M" }
+                }];
+              }
+            } catch(e) { showMessage("Ошибка загрузки: "+e.message, true); return null; }
+          }
+
+          async function renderTree(data) {
+            if (!data || !data.length) { showMessage("Нет данных", true); return; }
+            const container = document.getElementById('FamilyChart');
+            container.innerHTML = '';
+            try {
+              const chart = f3.createChart('#FamilyChart', data)
+                .setTransitionTime(1000)
+                .setCardXSpacing(250)
+                .setCardYSpacing(150)
+                .setSingleParentEmptyCard(true, {label:'ADD'})
+                .setShowSiblingsOfMain(false)
+                .setOrientationVertical();
+              const card = chart.setCardHtml()
+                .setCardDisplay([["first name","last name"],["birth year","death year"]])
+                .setCardDim(null)
+                .setMiniTree(true)
+                .setStyle('imageRect')
+                .setOnHoverPathToMain();
+              // const editTree = chart.editTree()
+              //   .fixed(true)
+              //   .setFields(["first name","last name","birthday","avatar","birth year","death year","location"])
+              //   .setEditFirst(true)
+              //   .setCardClickOpen(card);
+              // editTree.setEdit();
+              // editTree.setOnChange(async () => {
+              //   const updated = editTree.exportData();
+              //   await saveToFirestore(updated);
+              // });
+              chart.updateTree({initial:true});
+              let main = chart.getMainDatum();
+              if (!main && data.length) main = data[0];
+              if (main) chart.updateTree({initial:true});
+              window.treeRendered = true;
+            } catch(e) { showMessage("Ошибка отрисовки: "+e.message, true); }
+          }
+
+          onAuthStateChanged(auth, async (user) => {
+            if (!user) { window.location.href = "index.html"; return; }
+            showMessage("Загрузка данных...");
+            const treeData = await loadFromFirestore();
+            if (treeData) await renderTree(treeData);
+          });
+        }).catch(e => showMessage("Ошибка firestore: "+e.message, true));
+      }).catch(e => showMessage("Ошибка auth: "+e.message, true));
+    }).catch(e => showMessage("Ошибка Firebase: "+e.message, true));
+  }
 </script>
 </body>
 </html>
