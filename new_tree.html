@@ -65,7 +65,7 @@
 
     // Настраиваем карточки
     const f3Card = f3Chart.setCardHtml()
-      .setCardDisplay([["first name","last name"],["birthday"]])
+      .setCardDisplay([["first name","last name"],["birth year","death year"]])
       .setCardDim(null)
       .setMiniTree(true)
       .setStyle('imageRect')
@@ -74,7 +74,7 @@
     // 2. ВКЛЮЧАЕМ РЕДАКТИРОВАНИЕ
     const f3EditTree = f3Chart.editTree()
       .fixed(true)
-      .setFields(["first name","last name","birthday","avatar"])
+      .setFields(["first name","last name","birthday","avatar","birth year","death year","location"])
       .setEditFirst(true)
       .setCardClickOpen(f3Card);
     
