@@ -3,23 +3,50 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>my-family-chart</title>
+  <title>my-family-chart (diagnostic)</title>
   <script src="https://unpkg.com/d3@7"></script>
   <script type="module" src="https://unpkg.com/family-chart@0.9.0"></script>
   <link rel="stylesheet" href="https://unpkg.com/family-chart@0.9.0/dist/styles/family-chart.css">
   <style>
-    body { font-family: 'Arial', sans-serif; margin: 0; background-color: rgb(33,33,33); color: #fff; }
-    #FamilyChart { width: 100%; height: 100vh; min-height: 500px; margin: auto; background-color: rgb(33,33,33); }
-    .message { text-align: center; padding: 50px; font-size: 1.2rem; background: #2a2a3b; margin: 20px; border-radius: 8px; word-break: break-word; }
-    .error { color: #ff8888; background: #3a1a1a; }
-    .loading { color: #88ff88; }
-    .debug { font-size: 0.8rem; color: #aaa; margin-top: 20px; }
+    body { margin: 0; background: #1e1e2f; color: white; font-family: monospace; }
+    #log {
+      background: #0f0f1a;
+      padding: 10px;
+      font-size: 14px;
+      white-space: pre-wrap;
+      max-height: 100vh;
+      overflow-y: auto;
+    }
+    .log-entry { margin: 4px 0; border-bottom: 1px solid #333; padding: 4px; }
+    .error { color: #ff8888; background: #330000; }
+    .success { color: #88ff88; }
+    .info { color: #88aaff; }
   </style>
 </head>
 <body>
-<div id="FamilyChart" class="f3" style="width:100%;height:100vh;margin:auto;background-color:rgb(33,33,33);color:#fff;">
-  <div class="message loading">Загрузка семейного древа2...</div>
-</div>
+<div id="log">Лог будет здесь...</div>
+<div id="FamilyChart" style="display:none;"></div>
+
+<script>
+  // Ранняя диагностика: добавляем сообщения в лог
+  const logDiv = document.getElementById('log');
+  function addLog(msg, type = 'info') {
+    const entry = document.createElement('div');
+    entry.className = `log-entry ${type}`;
+    entry.textContent = new Date().toLocaleTimeString() + ' - ' + msg;
+    logDiv.appendChild(entry);
+    console.log(msg);
+  }
+  window.onerror = (msg, url, line, col, error) => {
+    addLog(`Глобальная ошибка: ${msg} (${url}:${line}:${col})`, 'error');
+    if (error && error.stack) addLog(error.stack, 'error');
+    return false;
+  };
+  window.onunhandledrejection = (event) => {
+    addLog(`Unhandled rejection: ${event.reason}`, 'error');
+  };
+  addLog('Страница загружена, начало диагностики', 'info');
+</script>
 
 <script type="importmap">
   {
@@ -32,31 +59,20 @@
 </script>
 
 <script type="module">
-  // Перехват глобальных ошибок для отображения на экране
-  window.addEventListener('error', (event) => {
-    const container = document.getElementById('FamilyChart');
-    if (container) {
-      container.innerHTML = `<div class="message error">Глобальная ошибка: ${event.message}<br><span class="debug">${event.filename}:${event.lineno}</span></div>`;
-    }
-  });
-
-  window.addEventListener('unhandledrejection', (event) => {
-    const container = document.getElementById('FamilyChart');
-    if (container) {
-      container.innerHTML = `<div class="message error">Необработанный Promise: ${event.reason}</div>`;
-    }
-  });
-
   import { initializeApp } from "firebase/app";
   import { getAuth, onAuthStateChanged } from "firebase/auth";
   import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
 
-  function showMessage(text, isError = false, details = '') {
-    const container = document.getElementById('FamilyChart');
-    if (container) {
-      container.innerHTML = `<div class="message ${isError ? 'error' : 'loading'}">${text}${details ? `<br><span class="debug">${details}</span>` : ''}</div>`;
-    }
+  // Функция для добавления сообщений в лог из модуля
+  function addLog(msg, type = 'info') {
+    const entry = document.createElement('div');
+    entry.className = `log-entry ${type}`;
+    entry.textContent = new Date().toLocaleTimeString() + ' - ' + msg;
+    document.getElementById('log').appendChild(entry);
+    console.log(msg);
   }
+
+  addLog('Модуль загружен, начинаем инициализацию Firebase', 'info');
 
   const firebaseConfig = {
     apiKey: "AIzaSyC8dabh_6jXYI22cpMfIA5mViNxaZAvzic",
@@ -68,58 +84,32 @@
   };
 
   let app, auth, db, treeDocRef;
-
   try {
     app = initializeApp(firebaseConfig);
+    addLog('Firebase инициализирован', 'success');
     auth = getAuth(app);
+    addLog('Auth получен', 'success');
     db = getFirestore(app);
+    addLog('Firestore получен', 'success');
     treeDocRef = doc(db, "familyTree", "mainTree");
-    showMessage("Firebase инициализирован, ожидаем авторизацию...");
+    addLog('Документ mainTree создан', 'success');
   } catch (err) {
-    showMessage("Ошибка инициализации Firebase: " + err.message, true);
+    addLog(`Ошибка инициализации Firebase: ${err.message}`, 'error');
     throw err;
   }
 
-  async function saveToFirestore(treeData) {
-    if (!treeData) return;
-    try {
-      await setDoc(treeDocRef, { treeData: treeData }, { merge: true });
-      console.log("Данные сохранены");
-    } catch (e) {
-      console.error("Ошибка сохранения:", e);
-      showMessage("Ошибка сохранения: " + e.message, true);
-    }
-  }
-
-  async function loadFromFirestore() {
-    try {
-      const docSnap = await getDoc(treeDocRef);
-      if (docSnap.exists() && docSnap.data().treeData && Array.isArray(docSnap.data().treeData)) {
-        return docSnap.data().treeData;
-      } else {
-        return [{
-          "id": "0",
-          "rels": {},
-          "data": { "first name": "Name", "last name": "Surname", "birthday": 1970, "avatar": "", "gender": "M" }
-        }];
-      }
-    } catch (err) {
-      console.error("Ошибка загрузки из Firestore:", err);
-      showMessage("Ошибка загрузки данных: " + err.message, true);
-      return null;
-    }
-  }
-
+  // Функция отображения дерева (упрощённая, без автосохранения для диагностики)
   async function renderTree(initialData) {
-    if (!initialData || !Array.isArray(initialData) || initialData.length === 0) {
-      showMessage("Нет данных для отображения", true);
+    addLog(`renderTree вызван, данных: ${initialData ? initialData.length : 0}`, 'info');
+    if (!initialData || !initialData.length) {
+      addLog('Нет данных для отрисовки', 'error');
       return;
     }
-
-    const container = document.getElementById('FamilyChart');
-    if (container) container.innerHTML = '';
-
     try {
+      const container = document.getElementById('FamilyChart');
+      container.style.display = 'block';
+      container.innerHTML = '';
+      addLog('Создаём дерево...', 'info');
       const f3Chart = f3.createChart('#FamilyChart', initialData)
         .setTransitionTime(1000)
         .setCardXSpacing(250)
@@ -140,89 +130,65 @@
         .setFields(["first name","last name","birthday","avatar","birth year","death year","location"])
         .setEditFirst(true)
         .setCardClickOpen(f3Card);
-      
       f3EditTree.setEdit();
 
-      f3EditTree.setOnChange(async () => {
-        console.log("Изменение, сохраняем...");
-        const updatedData = f3EditTree.exportData();
-        await saveToFirestore(updatedData);
-      });
-
       f3Chart.updateTree({ initial: true });
-      
       let mainDatum = f3Chart.getMainDatum();
-      if (!mainDatum && initialData.length > 0) {
-        console.warn("getMainDatum вернул null, используем первый элемент");
-        mainDatum = initialData[0];
-      }
-      if (mainDatum) {
-        f3EditTree.open(mainDatum);
-      } else {
-        throw new Error("Не удалось определить главный элемент дерева");
-      }
-      
+      if (!mainDatum && initialData.length > 0) mainDatum = initialData[0];
+      if (mainDatum) f3EditTree.open(mainDatum);
       f3Chart.updateTree({ initial: true });
-
-      window.f3Chart = f3Chart;
-      window.f3EditTree = f3EditTree;
+      addLog('Дерево успешно отрисовано', 'success');
+      // скрываем лог, показываем дерево на весь экран
+      document.getElementById('log').style.display = 'none';
     } catch (err) {
-      console.error("Ошибка отрисовки:", err);
-      showMessage("Ошибка отрисовки дерева: " + err.message, true);
+      addLog(`Ошибка отрисовки: ${err.message}`, 'error');
     }
   }
 
-  // Авторизация и запуск
-  onAuthStateChanged(auth, async (user) => {
+  async function loadFromFirestore() {
+    addLog('Загрузка данных из Firestore...', 'info');
     try {
-      if (!user) {
-        showMessage("Перенаправление на страницу входа...");
-        window.location.href = "index.html";
-        return;
+      const docSnap = await getDoc(treeDocRef);
+      if (docSnap.exists() && docSnap.data().treeData) {
+        addLog(`Данные получены, узлов: ${docSnap.data().treeData.length}`, 'success');
+        return docSnap.data().treeData;
+      } else {
+        addLog('Документ не найден, возвращаем fallback', 'info');
+        return [{
+          "id": "0",
+          "rels": {},
+          "data": { "first name": "Test", "last name": "Test", "birthday": 1970, "avatar": "", "gender": "M" }
+        }];
       }
-
-      showMessage("Пользователь авторизован: " + user.email + ". Загрузка данных...");
-      const treeData = await loadFromFirestore();
-      if (!treeData) return;
-
-      await renderTree(treeData);
-
-      // Слушаем изменения в Firestore
-      onSnapshot(treeDocRef, async (docSnapshot) => {
-        try {
-          if (docSnapshot.exists() && docSnapshot.data().treeData) {
-            const newDataFromServer = docSnapshot.data().treeData;
-            const currentLocalData = window.f3EditTree ? window.f3EditTree.exportData() : null;
-            if (currentLocalData && JSON.stringify(currentLocalData) !== JSON.stringify(newDataFromServer)) {
-              console.log("Получены обновления из Firestore, обновляем дерево...");
-              if (window.f3EditTree) window.f3EditTree.setOnChange(null);
-              await renderTree(newDataFromServer);
-              if (window.f3EditTree) {
-                window.f3EditTree.setOnChange(async () => {
-                  const updatedData = window.f3EditTree.exportData();
-                  await saveToFirestore(updatedData);
-                });
-              }
-            }
-          }
-        } catch (err) {
-          console.error("Ошибка в onSnapshot:", err);
-          showMessage("Ошибка синхронизации: " + err.message, true);
-        }
-      });
     } catch (err) {
-      console.error("Общая ошибка в onAuthStateChanged:", err);
-      showMessage("Критическая ошибка: " + err.message, true);
+      addLog(`Ошибка загрузки из Firestore: ${err.message}`, 'error');
+      throw err;
     }
+  }
+
+  // Таймаут для авторизации
+  let authTimeout = setTimeout(() => {
+    addLog('ПРЕДУПРЕЖДЕНИЕ: onAuthStateChanged не сработал за 15 секунд. Возможно, проблема с Firebase Auth.', 'error');
+  }, 15000);
+
+  addLog('Ожидаем onAuthStateChanged...', 'info');
+  onAuthStateChanged(auth, async (user) => {
+    clearTimeout(authTimeout);
+    addLog(`onAuthStateChanged сработал, user: ${user ? user.email : 'null'}`, user ? 'success' : 'error');
+    if (!user) {
+      addLog('Перенаправление на index.html', 'info');
+      window.location.href = "index.html";
+      return;
+    }
+    addLog(`Пользователь авторизован: ${user.email}`, 'success');
+    const treeData = await loadFromFirestore();
+    await renderTree(treeData);
   });
 
-  // Таймаут на случай, если авторизация зависла
+  // Дополнительная проверка: если через 2 секунды onAuthStateChanged не сработал, покажем это в логе
   setTimeout(() => {
-    const container = document.getElementById('FamilyChart');
-    if (container && container.innerHTML.includes("Загрузка семейного древа")) {
-      container.innerHTML = '<div class="message error">Зависание: авторизация не завершена. Проверьте соединение и настройки Firebase.</div>';
-    }
-  }, 10000);
+    addLog('Проверка: прошло 2 секунды, onAuthStateChanged всё ещё может не сработать', 'info');
+  }, 2000);
 </script>
 </body>
 </html>
