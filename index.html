@@ -91,7 +91,7 @@
         signInWithEmailAndPassword(auth, email, password)
             .then(() => {
                 // Успешный вход — перенаправляем на страницу с деревом
-                window.location.href = "tree.html";
+                window.location.href = "tree_edit.html";
             })
             .catch((error) => {
                 errorDiv.textContent = "Ошибка: неверный email или пароль";
