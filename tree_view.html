@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>my-family-chart</title>
+  <title>my-family-chart - редактирование</title>
   <script src="https://unpkg.com/d3@7"></script>
   <link rel="stylesheet" href="https://unpkg.com/family-chart@0.9.0/dist/styles/family-chart.css">
   <style>
@@ -20,7 +20,6 @@
 </div>
 
 <script>
-  // Функция для отображения сообщений на экране
   function showMessage(text, isError = false) {
     const container = document.getElementById('FamilyChart');
     if (container) {
@@ -47,7 +46,6 @@
   document.head.appendChild(script);
 
   function startApp() {
-    // Теперь импортируем Firebase
     import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js").then(({ initializeApp }) => {
       import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js").then(({ getAuth, onAuthStateChanged }) => {
         import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js").then(({ getFirestore, doc, getDoc, setDoc, onSnapshot }) => {
@@ -116,7 +114,11 @@
               chart.updateTree({initial:true});
               let main = chart.getMainDatum();
               if (!main && data.length) main = data[0];
-              if (main) chart.updateTree({initial:true});
+              //if (main) editTree.open(main);
+              chart.updateTree({initial:true});
+
+              // Сохраняем ссылку на chart для последующего переключения персоны
+              window.f3Chart = chart;
               window.treeRendered = true;
             } catch(e) { showMessage("Ошибка отрисовки: "+e.message, true); }
           }
@@ -125,7 +127,33 @@
             if (!user) { window.location.href = "index.html"; return; }
             showMessage("Загрузка данных...");
             const treeData = await loadFromFirestore();
-            if (treeData) await renderTree(treeData);
+            if (treeData) {
+              await renderTree(treeData);
+              
+              // ---- НОВАЯ ЛОГИКА: привязка пользователя к персоне ----
+              const uid = user.uid;
+              const userDocRef = doc(db, "users", uid);
+              const userDocSnap = await getDoc(userDocRef);
+              let personId = null;
+              if (userDocSnap.exists() && userDocSnap.data().personId) {
+                personId = userDocSnap.data().personId;
+                console.log(`Связь: пользователь ${user.email} -> персона ${personId}`);
+              } else {
+                console.warn(`Для пользователя ${user.email} не найдена связь, используем персону по умолчанию (первая в дереве)`);
+              }
+              
+              // Переключаем фокус дерева, если задан personId и chart уже создан
+              if (personId && window.f3Chart) {
+                try {
+                  window.f3Chart.updateMainId(personId);
+                  window.f3Chart.updateTree();
+                  console.log(`Древо переключено на персону ${personId}`);
+                } catch(e) {
+                  console.error("Ошибка переключения персоны:", e);
+                }
+              }
+              // ------------------------------------------------
+            }
           });
         }).catch(e => showMessage("Ошибка firestore: "+e.message, true));
       }).catch(e => showMessage("Ошибка auth: "+e.message, true));
