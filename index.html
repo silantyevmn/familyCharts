@@ -16,7 +16,7 @@
             font-family: sans-serif;
             background: #1e1e2f;
         }
-        .login-card, .choice-card {
+        .login-card, .choice-card, .loading-card {
             background: white;
             padding: 2rem;
             border-radius: 12px;
@@ -89,8 +89,13 @@
 </head>
 <body>
 <div id="app">
-    <!-- Форма входа -->
-    <div id="loginForm" class="login-card">
+	<!-- Индикатор загрузки (проверка сессии) -->
+    <div id="loadingPanel" class="loading-card">
+        <h2>🌳 Семейное древо</h2>
+        <p>Проверка пользователя...</p>
+    </div>
+    <!-- Форма входа (изначально скрыта)-->
+    <div id="loginForm" class="login-card" style="display: none;">
         <h2>🌳 Семейное древо</h2>
         <p>Введите email и пароль</p>
         <input type="email" id="email" placeholder="Email" autocomplete="email">
@@ -118,7 +123,8 @@
     {
         "imports": {
             "firebase/app": "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js",
-            "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"
+            "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js",
+			"firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
         }
     }
 </script>
@@ -126,6 +132,7 @@
 <script type="module">
     import { initializeApp } from "firebase/app";
     import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
+	import { getFirestore, doc, getDoc } from "firebase/firestore";
 
     const firebaseConfig = {
         apiKey: "AIzaSyC8dabh_6jXYI22cpMfIA5mViNxaZAvzic",
@@ -138,6 +145,7 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+	const db = getFirestore(app);
 
     const loginForm = document.getElementById('loginForm');
     const choicePanel = document.getElementById('choicePanel');
@@ -190,11 +198,30 @@
             });
     });
 
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
         if (user) {
-            loginForm.style.display = 'none';
-            choicePanel.style.display = 'block';
+            // пользователь уже вошёл (или только что вошёл)
+            try {
+                const userDocRef = doc(db, "users", user.uid);
+                const userDocSnap = await getDoc(userDocRef);
+                const canEdit = userDocSnap.exists() && userDocSnap.data().edit === true;
+                if (canEdit) {
+                    // редактор: показываем выбор режима
+                    loadingPanel.style.display = 'none';
+                    loginForm.style.display = 'none';
+                    choicePanel.style.display = 'block';
+                } else {
+                    // не редактор: сразу на просмотр
+                    window.location.href = "tree_view.html";
+                }
+            } catch (err) {
+                console.error("Ошибка проверки прав:", err);
+                // в случае ошибки считаем, что прав нет, отправляем на просмотр
+                window.location.href = "tree_view.html";
+            }
         } else {
+            // пользователь не авторизован: показываем форму входа
+            loadingPanel.style.display = 'none';
             loginForm.style.display = 'block';
             choicePanel.style.display = 'none';
         }
